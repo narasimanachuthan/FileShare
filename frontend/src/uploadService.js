@@ -50,7 +50,7 @@ export async function uploadFile(file) {
         throw new Error("Failed to get SAS Token")
     }
 
-    const { upload_url } = await sasResponse.json();
+    const { upload_url, file_id } = await sasResponse.json();
     console.log("Recieved SAS Token")
     
     console.log("Uploading to Azure")
@@ -68,5 +68,71 @@ export async function uploadFile(file) {
     }
 
     console.log("Uplaod Complete");
-    return keyBase64;
+    return { key: keyBase64, fileId: file_id};
+}
+
+async function importKey(keyBase64) {
+    const binaryString = window.atob(keyBase64);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i=0; i<len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+    }
+
+    return window.crypto.subtle.importKey(
+        "raw",
+        bytes,
+        { name: "AES-GCM"},
+        true,
+        ["decrypt"],
+    );
+}
+
+export async function downloadFile(fileId, keyBase64, filename) {
+    console.log("Requesting Read Access")
+    const sasResponse = await fetch(`${API_BASE_URL}/request-download?file_id=${fileId}`);
+
+    if (!sasResponse) {
+        throw new Error("Failed to get Read SAS Token")
+    }
+
+    const { download_url } = await sasResponse.json();
+
+    console.log("Downloading File")
+    const blobResponse = await fetch(download_url);
+    if (!blobResponse.ok) {
+        throw new Error("Failed to download from Azure");
+    }
+    const encryptedArrayBuffer = await blobResponse.arrayBuffer();
+
+    console.log("Decrypting File")
+    const iv = encryptedArrayBuffer.slice(0, 12);
+    const data = encryptedArrayBuffer.slice(12);
+    const key = await importKey(keyBase64);
+
+    try {
+        const decryptedBuffer = await window.crypto.subtle.decrypt(
+            {
+                name: "AES-GCM",
+                iv: new Uint8Array(iv),
+            },
+            key,
+            data,
+        );
+
+        const decryptedBlob = new Blob([decryptedBuffer]);
+        const url = window.URL.createObjectURL(decryptedBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        return true;
+    } catch (e) {
+        console.error(e);
+        throw new Error("Decryption failed!");
+    }
 }
