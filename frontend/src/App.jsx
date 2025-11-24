@@ -15,7 +15,6 @@ function App() {
   // --- DOWNLOAD STATE ---
   const [downloadId, setDownloadId] = useState(""); 
   const [downloadKey, setDownloadKey] = useState(""); 
-  const [downloadName, setDownloadName] = useState(""); 
   const [downloading, setDownloading] = useState(false);
   const [downloadStatus, setDownloadStatus] = useState("");
 
@@ -46,7 +45,7 @@ function App() {
   };
 
   const handleDownload = async () => {
-    if (!downloadId || !downloadKey || !downloadName) {
+    if (!downloadId || !downloadKey) {
       setDownloadStatus("⚠️ Please fill in all fields");
       return;
     }
@@ -56,7 +55,7 @@ function App() {
 
     try {
       // Pass the UUID, the Key, and the Filename to the service
-      await downloadFile(downloadId, downloadKey, downloadName);
+      await downloadFile(downloadId, downloadKey);
       setDownloadStatus("✅ Downloaded successfully!");
     } catch (error) {
       console.error(error);
@@ -185,17 +184,6 @@ function App() {
                 onChange={(e) => setDownloadKey(e.target.value)}
                 className="w-full bg-gray-900 border border-gray-700 rounded p-3 text-white font-mono text-xs focus:border-green-500 focus:outline-none transition-colors"
               />
-            </div>
-
-            <div>
-              <label className="text-xs text-gray-500 uppercase font-bold block mb-1">Original Filename</label>
-              <input 
-                placeholder="e.g. document.pdf" 
-                value={downloadName}
-                onChange={(e) => setDownloadName(e.target.value)}
-                className="w-full bg-gray-900 border border-gray-700 rounded p-3 text-white text-sm focus:border-green-500 focus:outline-none transition-colors"
-              />
-              <p className="text-[10px] text-gray-500 mt-1">Needed to set the file extension correctly.</p>
             </div>
 
             <button

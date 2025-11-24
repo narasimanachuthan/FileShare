@@ -2,11 +2,17 @@ import os
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "Project Aegis"
-    API_V1_STR: str = "/api/v1"
+    PROJECT_NAME: str
+    API_V1_STR: str
 
     AZURE_STORAGE_CONNECTION_STRING: str
-    AZURE_CONTAINER_NAME: str = "content"
+    AZURE_CONTAINER_NAME: str
+
+    POSTGRES_USER: str
+    POSTGRES_PASSWORD: str
+    POSTGRES_SERVER: str
+    POSTGRES_DB: str
+    DATABASE_URL: str
 
     class Config:
         current_dir = os.path.dirname(os.path.abspath(__file__))

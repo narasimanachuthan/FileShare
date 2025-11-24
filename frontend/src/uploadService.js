@@ -41,8 +41,14 @@ export async function uploadFile(file) {
     console.log("Encrypting File")
     const { encryptedBlob, keyBase64 } = await encryptFile(file);
 
+    const params = new URLSearchParams({
+        filename: file.name,
+        content_type: file.type || "application/octect-stream",
+        size: file.size
+    })
+
     console.log("Requesting SAS Token")
-    const sasResponse = await fetch(`${API_BASE_URL}/request-upload?filename=${file.name}`, {
+    const sasResponse = await fetch(`${API_BASE_URL}/request-upload?${params.toString()}`, {
         method: "POST",
     });
 
@@ -88,15 +94,15 @@ async function importKey(keyBase64) {
     );
 }
 
-export async function downloadFile(fileId, keyBase64, filename) {
+export async function downloadFile(fileId, keyBase64) {
     console.log("Requesting Read Access")
-    const sasResponse = await fetch(`${API_BASE_URL}/request-download?file_id=${fileId}`);
+    const response = await fetch(`${API_BASE_URL}/file/${fileId}`);
 
-    if (!sasResponse) {
-        throw new Error("Failed to get Read SAS Token")
+    if (!response.ok) {
+        throw new Error("File not found/expired")
     }
 
-    const { download_url } = await sasResponse.json();
+    const { download_url, filename } = await response.json();
 
     console.log("Downloading File")
     const blobResponse = await fetch(download_url);
