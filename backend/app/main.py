@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.core.security import generate_upload_sas, generate_download_sas
 from app.core.database import engine, Base, get_db
 from app.models.file import FileMetadata
+from app.core.ratelimit import RateLimiter
 
 Base.metadata.create_all(bind=engine)
 
@@ -18,7 +19,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.post("/api/v1/request-upload")
+@app.post("/api/v1/request-upload",
+    dependencies=[Depends(RateLimiter(times=5, seconds=3600))]
+)
 def request_upload_url(
     filename: str,
     content_type: str,
