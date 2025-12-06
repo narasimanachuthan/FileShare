@@ -1,5 +1,5 @@
 import uuid
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
@@ -13,6 +13,7 @@ from app.core.ratelimit import RateLimiter
 
 Base.metadata.create_all(bind=engine)
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
+MAX_FILE_SIZE_BYTES = 200 * 1024 * 1024
 
 app = FastAPI(title="File Share")
 
@@ -36,6 +37,11 @@ def request_upload_url(
     password: str | None = None,
     db: Session = Depends(get_db)
 ):
+    if size > MAX_FILE_SIZE_BYTES:
+        raise HTTPException(
+            status_code=403,
+            detail=f"File size exceeds the limit of {MAX_FILE_SIZE_BYTES / (1024 * 1024)}MB"
+        )
     expiration_time = datetime.utcnow() + timedelta(hours=expire_hours)
     file_id = str(uuid.uuid4())
     hashed_pwd = pwd_context.hash(password) if password else None

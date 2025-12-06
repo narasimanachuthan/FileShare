@@ -1,4 +1,5 @@
 const API_BASE_URL = "http://127.0.0.1:8000/api/v1";
+const MAX_FILE_SIZE_BYTES = 200 * 1024 * 1024;
 
 function bufferToBase64(buffer) {
   let binary = '';
@@ -62,6 +63,9 @@ async function decryptAndSave(downloadUrl, keyBase64, filename) {
 }
 
 export async function uploadFile(file, options = {}) {
+  if (file.size > MAX_FILE_SIZE_BYTES) {
+    throw new Error(`File too large. Max size is ${MAX_FILE_SIZE_BYTES / (1024 * 1024)}MB.`);
+  }
   const { expireHours = 24, maxDownloads = null, password = null } = options;
 
   console.log("Encrypting file locally...");
