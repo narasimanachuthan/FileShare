@@ -5,8 +5,10 @@ export default function HomePage() {
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState("");
-  
   const [shareLink, setShareLink] = useState("");
+
+  const [expireHours, setExpireHours] = useState(24);
+  const [maxDownloads, setMaxDownloads] = useState(""); 
 
   const handleUpload = async () => {
     if (!file) return;
@@ -16,10 +18,12 @@ export default function HomePage() {
     setShareLink("");
 
     try {
-      const { key, fileId } = await uploadFile(file);
+      const { key, fileId } = await uploadFile(file, {
+        expireHours: Number(expireHours),
+        maxDownloads: maxDownloads ? Number(maxDownloads) : null
+      });
       
       const link = `${window.location.origin}/d/${fileId}#${key}`;
-      
       setShareLink(link);
       setUploadStatus("✅ Success!");
     } catch (error) {
@@ -37,7 +41,7 @@ export default function HomePage() {
           Project Aegis <span className="text-xs bg-gray-700 text-gray-300 px-2 py-0.5 rounded ml-2">v2</span>
         </h1>
 
-        <div className="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center hover:border-blue-500 transition-colors relative mb-6">
+        <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center hover:border-blue-500 transition-colors relative mb-4">
           <input 
             type="file" 
             onChange={(e) => setFile(e.target.files[0])}
@@ -45,6 +49,35 @@ export default function HomePage() {
           />
           <div className="text-gray-400 truncate">
             {file ? <span className="font-mono text-blue-300">{file.name}</span> : <span>Click to select file</span>}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          
+          <div>
+            <label className="block text-xs text-gray-500 font-bold mb-1 uppercase">Expires In</label>
+            <select 
+              value={expireHours}
+              onChange={(e) => setExpireHours(e.target.value)}
+              className="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm focus:border-blue-500 outline-none"
+            >
+              <option value="1">1 Hour</option>
+              <option value="24">1 Day</option>
+              <option value="72">3 Days</option>
+              <option value="168">7 Days</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs text-gray-500 font-bold mb-1 uppercase">Max Downloads</label>
+            <input 
+              type="number"
+              placeholder="Infinite"
+              min="1"
+              value={maxDownloads}
+              onChange={(e) => setMaxDownloads(e.target.value)}
+              className="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm focus:border-blue-500 outline-none"
+            />
           </div>
         </div>
 
@@ -70,9 +103,6 @@ export default function HomePage() {
             >
               {shareLink}
             </div>
-            <p className="text-[10px] text-gray-500 mt-2 text-center">
-              (Click to copy)
-            </p>
           </div>
         )}
       </div>

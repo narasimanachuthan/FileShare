@@ -37,15 +37,22 @@ async function encryptFile(file) {
     return { encryptedBlob, keyBase64 };
 }
 
-export async function uploadFile(file) {
-    console.log("Encrypting File")
+export async function uploadFile(file, options = {}) {
+    const { expireHours = 24, maxDownloads = null } = options;
+
+    console.log("Encrypting File");
     const { encryptedBlob, keyBase64 } = await encryptFile(file);
 
     const params = new URLSearchParams({
         filename: file.name,
         content_type: file.type || "application/octect-stream",
-        size: file.size
-    })
+        size: file.size,
+        expire_hours: expireHours
+    });
+
+    if (maxDownloads) {
+        params.append("max_downloads", maxDownloads);
+    }
 
     console.log("Requesting SAS Token")
     const sasResponse = await fetch(`${API_BASE_URL}/request-upload?${params.toString()}`, {

@@ -14,8 +14,12 @@ export default function DownloadPage() {
   useEffect(() => {
     async function fetchMetadata() {
       try {
-        const response = await fetch(`http://127.0.0.1:8000/api/v1/file/${fileId}`);
-        if (!response.ok) throw new Error("File not found or expired");
+        const response = await fetch(`http://127.0.0.1:8000/api/v1/file/${fileId}/preview`);
+        console.log(response)
+        if (!response.ok) {
+          if (response.status === 410) throw new Error("FIle expired or limit reached")
+          throw new Error("File not found")
+        }
         const data = await response.json();
         setFilename(data.filename);
         setStatus("Ready to decrypt");
