@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { downloadFile } from '../uploadService';
+import { downloadFile, downloadProtectedFile } from '../uploadService';
 
 export default function DownloadPage() {
   const { fileId } = useParams();
@@ -8,6 +8,9 @@ export default function DownloadPage() {
   const [filename, setFilename] = useState("");
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState(false);
+  
+  const [isProtected, setIsProtected] = useState(false);
+  const [passwordInput, setPasswordInput] = useState("");
 
   const keyBase64 = window.location.hash.slice(1);
 
@@ -15,14 +18,22 @@ export default function DownloadPage() {
     async function fetchMetadata() {
       try {
         const response = await fetch(`http://127.0.0.1:8000/api/v1/file/${fileId}/preview`);
-        console.log(response)
+        
         if (!response.ok) {
-          if (response.status === 410) throw new Error("FIle expired or limit reached")
-          throw new Error("File not found")
+           if (response.status === 410) throw new Error("File expired or limit reached");
+           throw new Error("File not found");
         }
+        
         const data = await response.json();
         setFilename(data.filename);
-        setStatus("Ready to decrypt");
+        setIsProtected(data.is_protected);
+
+        if (data.is_protected) {
+            setStatus("🔒 Password Required");
+        } else {
+            setStatus("Ready to decrypt");
+        }
+
       } catch (err) {
         setStatus(err.message);
         setError(true);
@@ -38,10 +49,21 @@ export default function DownloadPage() {
     }
 
     setDownloading(true);
-    setStatus("Downloading & Decrypting...");
-
+    
     try {
-      await downloadFile(fileId, keyBase64);
+      if (isProtected) {
+        if (!passwordInput) {
+            setStatus("⚠️ Please enter the password");
+            setDownloading(false);
+            return;
+        }
+        setStatus("🔐 Verifying Password & Downloading...");
+        await downloadProtectedFile(fileId, passwordInput, keyBase64, filename);
+      } else {
+        setStatus("Downloading & Decrypting...");
+        await downloadFile(fileId, keyBase64);
+      }
+      
       setStatus("✅ Download Complete!");
     } catch (err) {
       console.error(err);
@@ -69,16 +91,33 @@ export default function DownloadPage() {
               </div>
             </div>
 
+            {isProtected && (
+                <div className="mb-6 animate-fade-in">
+                    <input 
+                        type="password"
+                        placeholder="Enter Password"
+                        value={passwordInput}
+                        onChange={(e) => setPasswordInput(e.target.value)}
+                        className="w-full bg-gray-900 border border-red-500/50 rounded p-3 text-center text-white focus:border-red-500 outline-none transition-colors"
+                    />
+                </div>
+            )}
+
             <button
               onClick={handleDownload}
               disabled={downloading || !filename}
               className={`w-full py-4 rounded-lg font-bold text-lg transition-all
                 ${downloading 
                   ? 'bg-gray-600 cursor-not-allowed' 
-                  : 'bg-green-600 hover:bg-green-500 shadow-lg hover:shadow-green-500/50'
+                  : isProtected 
+                    ? 'bg-red-600 hover:bg-red-500 shadow-lg hover:shadow-red-500/50'
+                    : 'bg-green-600 hover:bg-green-500 shadow-lg hover:shadow-green-500/50'
                 }`}
             >
-              {downloading ? 'Decrypting...' : 'Unlock & Download'}
+              {downloading 
+                 ? 'Decrypting...' 
+                 : isProtected ? 'Unlock & Download' : 'Download File'
+              }
             </button>
 
             <p className="mt-4 text-sm text-gray-500 font-mono">{status}</p>

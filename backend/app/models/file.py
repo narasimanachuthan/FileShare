@@ -13,3 +13,4 @@ class FileMetadata(Base):
     expiration_time = Column(DateTime(timezone=True), nullable=False)
     max_downloads = Column(Integer, nullable=True)
     download_count = Column(Integer, default=0)
+    password_hash = Column(String, nullable=True)

@@ -8,7 +8,8 @@ export default function HomePage() {
   const [shareLink, setShareLink] = useState("");
 
   const [expireHours, setExpireHours] = useState(24);
-  const [maxDownloads, setMaxDownloads] = useState(""); 
+  const [maxDownloads, setMaxDownloads] = useState("");
+  const [password, setPassword] = useState("");
 
   const handleUpload = async () => {
     if (!file) return;
@@ -20,7 +21,8 @@ export default function HomePage() {
     try {
       const { key, fileId } = await uploadFile(file, {
         expireHours: Number(expireHours),
-        maxDownloads: maxDownloads ? Number(maxDownloads) : null
+        maxDownloads: maxDownloads ? Number(maxDownloads) : null,
+        password: password || null
       });
       
       const link = `${window.location.origin}/d/${fileId}#${key}`;
@@ -52,8 +54,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          
+        <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
             <label className="block text-xs text-gray-500 font-bold mb-1 uppercase">Expires In</label>
             <select 
@@ -81,6 +82,19 @@ export default function HomePage() {
           </div>
         </div>
 
+        <div className="mb-6">
+          <label className="block text-xs text-gray-500 font-bold mb-1 uppercase">
+            Password Protection (Optional)
+          </label>
+          <input 
+            type="password"
+            placeholder="Set a password to download"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm focus:border-blue-500 outline-none placeholder-gray-600"
+          />
+        </div>
+
         <button
           onClick={handleUpload}
           disabled={!file || uploading}
@@ -103,6 +117,9 @@ export default function HomePage() {
             >
               {shareLink}
             </div>
+            <p className="text-[10px] text-gray-500 mt-2 text-center">
+              (Click to copy)
+            </p>
           </div>
         )}
       </div>
